@@ -109,6 +109,7 @@ return [
                 0 => 'user_id',
                 1 => 'order_status',
                 2 => 'order_id',
+                3 => 'total',
             ],
             'page_size' => 25,
             'page_size_param' => null,

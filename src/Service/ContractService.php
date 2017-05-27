@@ -21,6 +21,9 @@ class ContractService extends ApigilityEventAwareObject
 {
     const EVENT_CONTRACT_PAYED = 'ContractService.EVENT_CONTRACT_PAYED';
 
+    const BUY_TYPE_ORIGINAL = 1;
+    const BUY_TYPE_GROUP = 2;
+
     protected $classMethodsHydrator;
 
     /**
@@ -44,6 +47,7 @@ class ContractService extends ApigilityEventAwareObject
         $this->em = $services->get('Doctrine\ORM\EntityManager');
         $this->serviceService = $services->get('ApigilityVIP\Service\ServiceService');
         $this->orderService = $services->get('ApigilityOrder\Service\OrderService');
+        $this->groupService = $services->get('ApigilityGroup\Service\GroupService');
     }
 
     /**
@@ -69,11 +73,19 @@ class ContractService extends ApigilityEventAwareObject
         $contract->setCreateTime(new \DateTime());
         $contract->setUser($user);
 
+        $price = $service->getPrice();
+        if(isset($data->buy_type)){
+            if($data->buy_type == $this::BUY_TYPE_GROUP) {
+                $price = $this->groupService->getParticipationPrice($user);
+            }
+        }
+
+        $service = $this->serviceService->getService($data->service_id);
         $order = $this->orderService->createOrder($service->getTitle(), $user);
         $this->orderService->createOrderDetail(
             $order,
             $service->getTitle(),
-            $service->getPrice(),
+            $price,
             1,
             $service->getId(),
             $service->getId()
@@ -131,11 +143,18 @@ class ContractService extends ApigilityEventAwareObject
             $where .= 'o.id = :order_id';
         }
 
+        if (isset($params->total)) {
+            $qb->innerJoin('c.order', 'o');
+            if (!empty($where)) $where .= ' AND ';
+            $where .= 'o.total = :total';
+        }
+
         if (!empty($where)) {
             $qb->where($where);
             if (isset($params->user_id)) $qb->setParameter('user_id', $params->user_id);
             if (isset($params->order_status)) $qb->setParameter('order_status', $params->order_status);
             if (isset($params->order_id)) $qb->setParameter('order_id', $params->order_id);
+            if (isset($params->total)) $qb->setParameter('total', $params->total);
         }
 
         $doctrine_paginator = new DoctrineToolPaginator($qb->getQuery());
