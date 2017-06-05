@@ -21,8 +21,16 @@ class ContractService extends ApigilityEventAwareObject
 {
     const EVENT_CONTRACT_PAYED = 'ContractService.EVENT_CONTRACT_PAYED';
 
-    const BUY_TYPE_ORIGINAL = 1;
-    const BUY_TYPE_GROUP = 2;
+    const BUY_TYPE_ORIGINAL = 1;    //直接购买
+    const BUY_TYPE_GROUP = 2;       //拼团购买
+
+    const STATUS_WAIT_TO_PAY = 1;   // 等待付款
+    const STATUS_CANCELED = 2;      // 已取消
+    const STATUS_PAYED = 3;         // 已支付
+    const STATUS_WAIT_TO_SEND = 4;  // 等待发货
+    const STATUS_SENT = 5;          // 已发货
+    const STATUS_SENT_BACK = 6;     // 货已回发
+    const STATUS_FINISH = 7;        // 已完成
 
     protected $classMethodsHydrator;
 
@@ -74,14 +82,18 @@ class ContractService extends ApigilityEventAwareObject
         $contract->setUser($user);
 
         $price = $service->getPrice();
+        $status = $this::STATUS_WAIT_TO_PAY;
         if(isset($data->buy_type)){
             if($data->buy_type == $this::BUY_TYPE_GROUP) {
                 $price = $this->groupService->getParticipationPrice($user);
+                if($price == 0){
+                    $status = $this::STATUS_PAYED;
+                }
             }
         }
 
         $service = $this->serviceService->getService($data->service_id);
-        $order = $this->orderService->createOrder($service->getTitle(), $user);
+        $order = $this->orderService->createOrder($service->getTitle(), $user, $status);
         $this->orderService->createOrderDetail(
             $order,
             $service->getTitle(),
