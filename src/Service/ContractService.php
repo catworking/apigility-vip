@@ -83,14 +83,6 @@ class ContractService extends ApigilityEventAwareObject
 
         $price = $service->getPrice();
         $status = $this::STATUS_WAIT_TO_PAY;
-        if(isset($data->buy_type)){
-            if($data->buy_type == $this::BUY_TYPE_GROUP) {
-                $price = $this->groupService->getParticipationPrice($user);
-                if($price == 0){
-                    $status = $this::STATUS_PAYED;
-                }
-            }
-        }
 
         $service = $this->serviceService->getService($data->service_id);
         $order = $this->orderService->createOrder($service->getTitle(), $user, $status);
@@ -232,4 +224,27 @@ class ContractService extends ApigilityEventAwareObject
             'contract' => $this->getContract($contract_id)
         ]);
     }
+
+    /**
+     * 获取用户的合约
+     *
+     * @param $user
+     * @return DoctrineEntity\Contract
+     * @throws \Exception
+     */
+    public function getContractsByUser(User $user)
+    {
+        $qb = new QueryBuilder($this->em);
+        $qb->select('c')->from('ApigilityVIP\DoctrineEntity\Contract', 'c')->orderBy(new Expr\OrderBy('c.expire_time', 'DESC'));
+
+        $where = '';
+
+        $qb->innerJoin('c.user', 'u');
+        $where .= 'u.id = :user_id';
+
+        $qb->where($where);
+        $qb->setParameter('user_id', $user->getId());
+        return $qb->getQuery()->getResult();
+    }
+
 }
