@@ -242,6 +242,9 @@ class ContractService extends ApigilityEventAwareObject
         $qb->innerJoin('c.user', 'u');
         $where .= 'u.id = :user_id';
 
+        $qb->innerJoin('c.order', 'o');
+        $where .= ' AND o.status = 3';
+
         $qb->where($where);
         $qb->setParameter('user_id', $user->getId());
         return $qb->getQuery()->getResult();
