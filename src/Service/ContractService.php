@@ -82,6 +82,9 @@ class ContractService extends ApigilityEventAwareObject
         $contract->setUser($user);
 
         $price = $service->getPrice();
+        if (isset($data->price)) {
+            $price = $data->price;
+        }
         $status = $this::STATUS_WAIT_TO_PAY;
 
         $service = $this->serviceService->getService($data->service_id);
